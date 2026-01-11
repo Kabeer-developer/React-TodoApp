@@ -1,9 +1,17 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 
 function App() {
-  const [todos, setTodos] = useState([]);
+  const [todos, setTodos] = useState(() => {
+    const saved = localStorage.getItem("todos");
+    return saved ? JSON.parse(saved) : [];
+  })
   const [text, setText] = useState("");
   const [editId, setEditId] = useState(null);
+  const [filter,setFilter] = useState("all");
+
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(todos))
+  },[todos]);
 
   function addTodo() {
     if(!text.trim()) return;
@@ -17,6 +25,10 @@ function App() {
     setText("");
   }
 
+  function toggleTodo(id) {
+    setTodos(todos.map(todo => todo.id == id ? {...todo, completed: !todo.completed} : todo));
+  }
+
   function editTodo(todo) {
     setText(todo.text);
     setEditId(todo.id);
@@ -25,6 +37,13 @@ function App() {
   function deleteTodo(id) {
     setTodos(todos.filter(todo => todo.id !== id));
   }
+
+  const filterTodos = todos.filter(todo => {
+    if(filter === "active") return !todo.completed;
+    if(filter === "completed") return todo.completed;
+    return true;
+  });
+
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
@@ -46,27 +65,26 @@ function App() {
             {editId ? "Update" : "Add"}
           </button>
         </div>
+        <div className="flex justify-between mb-4">
+          <button onClick={() => setFilter("all")} className={`px-2 ${filter==="all" ? "font-bold text-blue-500" : ""}`}> All</button>
+          <button onClick={() => setFilter("active")} className={`px-2 ${filter==="active" ? "font-bold text-blue-500" : ""}`}>Active</button>
+          <button onClick={() => setFilter("completed")} className={`px-2 ${filter==="completed" ? "font-bold text-blue-500" : ""}`}>Completed</button>
+        </div>
         
-        <ul className="space-y-2">
-          {todos.map(todo => 
-            <li key={todo.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <span className="text-gray-700 flex-1">{todo.text}</span>
+        <ul>
+          {filterTodos.map(todo => (
+            <li key={todo.id} className="flex justify-between items-center mb-2 border-b pb-1">
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={todo.completed} onChange={() => toggleTodo(todo.id)}/>
+
+                <span className={`${todo.completed ? "line-through text-gray-500" : ""}`}>{todo.text}</span>
+              </div>
               <div className="flex gap-2">
-                <button 
-                  onClick={() => editTodo(todo)}
-                  className="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm"
-                >
-                  Edit
-                </button>
-                <button 
-                  onClick={()=> deleteTodo(todo.id)}
-                  className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
-                >
-                  Delete
-                </button>
+                <button onClick={() => {editTodo(todo)}} className="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm">Edit</button>
+                <button onClick={() => {deleteTodo(todo.id)}} className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm">Delete</button>
               </div>
             </li>
-          )}
+          ))}
         </ul>
       </div>
     </div>
